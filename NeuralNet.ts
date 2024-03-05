@@ -305,6 +305,10 @@ class NeuralNet implements ICloneable {
         console.log(`Best Score: ${this.BestScore()}`);
         console.log(`Best Net Index: ${this.BestNetIndex()}`);
     }
+
+    public ResetScores(){
+        this.Generation_.forEach((nn) => {nn.ChangeScore(nn.Score());});
+    }
   }
   class LearningDB{
     public LearningInputs: Array<Array<number>>;
@@ -324,3 +328,17 @@ class NeuralNet implements ICloneable {
         this.ExpectedOutputs.push(outputs);
     }
   }
+function PassOneGeneration(population: Generation, learningDB: LearningDB) {
+    population.ResetScores();
+    population.Generation_.forEach(net => {
+        var error = 0;
+        var res = net.Result();
+        learningDB.LearningInputs.forEach((inputs, index) => {
+            net.GetInputs(inputs);
+            res.forEach((output, index_) => {
+                error += Math.pow(output - learningDB.ExpectedOutputs[index][index_], 2);
+            });
+        });
+        net.ChangeScore(100000 - error);
+    });
+}

@@ -252,6 +252,9 @@ var Generation = /** @class */ (function () {
         console.log("Best Score: ".concat(this.BestScore()));
         console.log("Best Net Index: ".concat(this.BestNetIndex()));
     };
+    Generation.prototype.ResetScores = function () {
+        this.Generation_.forEach(function (nn) { nn.ChangeScore(nn.Score()); });
+    };
     return Generation;
 }());
 var LearningDB = /** @class */ (function () {
@@ -269,3 +272,17 @@ var LearningDB = /** @class */ (function () {
     };
     return LearningDB;
 }());
+function PassOneGeneration(population, learningDB) {
+    population.ResetScores();
+    population.Generation_.forEach(function (net) {
+        var error = 0;
+        var res = net.Result();
+        learningDB.LearningInputs.forEach(function (inputs, index) {
+            net.GetInputs(inputs);
+            res.forEach(function (output, index_) {
+                error += Math.pow(output - learningDB.ExpectedOutputs[index][index_], 2);
+            });
+        });
+        net.ChangeScore(100000 - error);
+    });
+}

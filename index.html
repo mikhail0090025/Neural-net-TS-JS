@@ -6,6 +6,16 @@
     <title>Neural net</title>
     <script src="NeuralNet.js"></script>
     <link rel="stylesheet" href="style/bootstrap.min.css">
+    <script src="Libraries/jquery.min.js"></script>
+    <script src="Libraries/react/react.production.min.js"></script>
+    <script src="Libraries/react/react-dom.production.min.js"></script>
+    <script src="Libraries/react/babel.min.js"></script>
+    <style>
+        td{
+            border: 1px solid black;
+            padding: 10px;
+        }
+    </style>
 </head>
 <body>
     <div class="container-fluid">
@@ -33,7 +43,105 @@
             </div>
             <button class="btn btn-primary" id="btn_new_generation">Create</button>
         </div>
+        <button class="btn btn-primary mt-3 mb-3" id="add_item_to_db">Add item to learn database</button>
+        <button class="btn btn-primary mt-3 mb-3" id="show_db">Show Learn DB</button>
+        <div id="learn_db_show"></div>
+        <div class="col-md-6 border rounded border-primary p-4" id="new_item_in_learn_DB">
+
+        </div>
     </div>
     <script src="page.js"></script>
+    <script type="text/babel">
+        // REACT COMPONENTS
+        function AddDataToDb({database}){
+            let inputElements = [];
+            let outputElements = [];
+            for (let i = 0; i < database.InputsCount; i++) {
+                inputElements.push(<div className="form-group"><label for={"learn_input" + i}>Input {i}</label>&nbsp;<input type="number" id={"learn_input" + i} key={i} value="0" /></div>);
+            }
+            for (let i = 0; i < database.OutputsCount; i++) {
+                outputElements.push(<div className="form-group"><label for={"exp_output" + i}>Output {i}</label>&nbsp;<input type="number" id={"exp_output" + i} key={i} value="0" /></div>);
+            }
+            return(
+                <div>
+                    <h4>Learn inputs</h4>
+                    {inputElements}
+                    <h4>Expected outputs</h4>
+                    {outputElements}
+                    <button id="add_to_db_btn" onclick="AddToDB();" className="btn">Add to DB</button>
+                    <button id="set_random_btn" onclick="SetRandom();" className="btn">Set random</button>
+                </div>
+            );
+        }
+        function ShowLearnDB({database}){
+            return(
+                <table>
+                    <tbody>
+                        {database.LearningInputs.map((inputs, index) => (
+                            <div key={index}>
+                                <NumbersToTabel list={inputs}/>
+                                <NumbersToTabel list={database.ExpectedOutputs[index]}/>
+                                <br />
+                            </div>
+                        ))}
+                    </tbody>
+                </table>
+            );
+        }
+        function NumbersToTabel({list}){
+            return(
+                <tr>
+                    {list.map((num) => (<td>{ parseFloat(num).toFixed(3) }</td>))}
+                </tr>
+            );
+        }
+        // METHODS
+        function SetNewItemWindow(){
+            ReactDOM.render(<AddDataToDb database={learning_db} />, document.getElementById("new_item_in_learn_DB"));
+        }
+        function ShowDB(){
+            ReactDOM.render(<ShowLearnDB database={learning_db} />, document.getElementById("learn_db_show"));
+        }
+        function AddToDB(){
+            var inputs_to_add = [];
+            var outputs_to_add = [];
+            for (let i = 0; i < learning_db.InputsCount; i++) {
+                inputs_to_add.push(document.getElementById("learn_input" + i).value);
+            }
+            for (let i = 0; i < learning_db.OutputsCount; i++) {
+                outputs_to_add.push(document.getElementById("exp_output" + i).value);
+            }
+            learning_db.AddPair(inputs_to_add, outputs_to_add);
+            console.log("Item was added!");
+        }
+        function SetRandom(){
+            for (let i = 0; i < learning_db.InputsCount; i++) {
+                document.getElementById("learn_input" + i).value = (Math.random() * 2) - 1;
+            }
+            for (let i = 0; i < learning_db.OutputsCount; i++) {
+                document.getElementById("exp_output" + i).value = (Math.random() * 2) - 1;
+            }
+        }
+    </script>
+    <script>
+        $(".btn").attr("class", "btn btn-primary m-2");
+        $("body").on("mouseenter", ".btn", function() { $(this).attr("class", "btn btn-secondary m-2"); } );
+        $("body").on("mouseleave", ".btn", function() { $(this).attr("class", "btn btn-primary m-2"); } );
+        $("body").on("click", "#add_item_to_db", function() {
+            if(learning_db) SetNewItemWindow();
+            else {
+                $("#new_item_in_learn_DB").html("<p>Generation was not created! Create it firstly</p>");
+            }
+        });
+        $("body").on("click", "#set_random_btn", function() {
+            SetRandom();
+        });
+        $("body").on("click", "#add_to_db_btn", function() {
+            AddToDB();
+        });
+        $("body").on("click", "#show_db", function() {
+            ShowDB();
+        });
+    </script>
 </body>
 </html>
