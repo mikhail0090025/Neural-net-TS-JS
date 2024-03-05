@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural net</title>
+    <script src="NeuralNet.js"></script>
+    <link rel="stylesheet" href="style/bootstrap.min.css">
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="col-md-6 border rounded border-primary p-4" id="new_generation">
+            <h3>New generation</h3>
+            <div class="form-group">
+                <label for="inputs_count">Inputs count: </label>
+                <input type="number" name="inputs_count" id="inputs_count" min="1" max="9999" value="3">
+            </div>
+            <div class="form-group">
+                <label for="neurals_count">Neurals count: </label>
+                <input type="number" name="neurals_count" id="neurals_count" min="1" max="9999" value="3">
+            </div>
+            <div class="form-group">
+                <label for="outputs_count">Outputs count: </label>
+                <input type="number" name="outputs_count" id="outputs_count" min="1" max="9999" value="3">
+            </div>
+            <div class="form-group">
+                <label for="layers_count">Layers count: </label>
+                <input type="number" name="layers_count" id="layers_count" min="1" max="9999" value="3">
+            </div>
+            <div class="form-group">
+                <label for="size_">Generation size: </label>
+                <input type="number" name="size_" id="size_" min="1" max="9999" value="50">
+            </div>
+            <button class="btn btn-primary" id="btn_new_generation">Create</button>
+        </div>
+    </div>
+    <script src="page.js"></script>
+</body>
+</html>
