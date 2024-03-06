@@ -10,10 +10,11 @@
     <script src="Libraries/react/react.production.min.js"></script>
     <script src="Libraries/react/react-dom.production.min.js"></script>
     <script src="Libraries/react/babel.min.js"></script>
+    <script src="Libraries/vue.js"></script>
     <style>
         td{
             border: 1px solid black;
-            padding: 10px;
+            padding: 4px;
         }
     </style>
 </head>
@@ -47,10 +48,56 @@
         <button class="btn btn-primary mt-3 mb-3" id="show_db">Show Learn DB</button>
         <div id="learn_db_show"></div>
         <div class="col-md-6 border rounded border-primary p-4" id="new_item_in_learn_DB">
+            
+        </div>
+        <div class="col-md-6 border rounded border-primary p-4" id="population_block">
+            <h4>Population data:</h4>
+            <span v-if="GenerationsPassed !== 0">Error: {{ CurrentError }}</span><br>
+            <span>Frames passed: {{ GenerationsPassed }}</span><br>
+            <span>Learning factor: {{ LearningFactor.toFixed(7) }}</span>
+            <button @click="changeLearningFactor(10)" class="btn btn-primary mt-3 mb-3" v-show="GenerationCreated_">x10</button>
+            <button @click="changeLearningFactor(0.1)" class="btn btn-primary mt-3 mb-3" v-show="GenerationCreated_">x0.1</button>
 
+            <br>
+            <button class="btn btn-primary mt-3 mb-3" id="pass_one_gen" @click="update">Pass one generation</button>
+            <button class="btn btn-primary mt-3 mb-3" @click="update">&#x21BB;</button>
         </div>
     </div>
+    
+    <!-- POPULATION AND LEARNING DB ARE HERE -->
     <script src="page.js"></script>
+
+    <!-- Population block -->
+    <script>
+        const PopulationVue = new Vue({
+            el: "#population_block",
+            data:{
+                GenerationsPassed: generation ? generation.GenerationsPassed : 0,
+                CurrentError: generation ? generation.CurrentError : 0,
+                LearningFactor: generation ? generation.LearningFactor : 0,
+                GenerationCreated_: GenerationCreated
+            },
+            methods:{
+                update: function () {
+                    this.GenerationCreated_ = GenerationCreated;
+                    this.GenerationsPassed = GenerationCreated ? generation.GenerationsPassed : 0;
+                    this.LearningFactor = GenerationCreated ? generation.LearningFactor : 0;
+                    this.CurrentError = GenerationCreated ? generation.CurrentError : 0;
+                },
+                changeLearningFactor(factor){
+                    if(generation.LearningFactor * factor < 1 && generation.LearningFactor * factor > 0.0000001){
+                        generation.LearningFactor *= factor;
+                        this.update();
+                    }
+                }
+            },
+            mounted: function () {
+                this.update();
+            }
+        });
+    </script>
+
+    <!-- LEARN DATABASE -->
     <script type="text/babel">
         // REACT COMPONENTS
         function AddDataToDb({database}){
@@ -77,10 +124,10 @@
             return(
                 <table>
                     <tbody>
-                        {database.LearningInputs.map((inputs, index) => (
+                        {database.LearnInputs.map((inputs, index) => (
                             <div key={index}>
                                 <NumbersToTabel list={inputs}/>
-                                <NumbersToTabel list={database.ExpectedOutputs[index]}/>
+                                <NumbersToTabel list={database.LearnOutputs[index]}/>
                                 <br />
                             </div>
                         ))}
@@ -123,6 +170,8 @@
             }
         }
     </script>
+
+    <!-- BUTTONS -->
     <script>
         $(".btn").attr("class", "btn btn-primary m-2");
         $("body").on("mouseenter", ".btn", function() { $(this).attr("class", "btn btn-secondary m-2"); } );
@@ -141,6 +190,9 @@
         });
         $("body").on("click", "#show_db", function() {
             ShowDB();
+        });
+        $("body").on("click", "#pass_one_gen", function() {
+            generation.PassOneGeneration();
         });
     </script>
 </body>

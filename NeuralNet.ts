@@ -6,339 +6,287 @@ enum RoundMethod {
 interface ICloneable{
     Clone(): ICloneable;
 }
-class NodeNN implements ICloneable{
-    protected value: number;
-    protected Is_rounded: boolean;
-    // Getter for value
-    public CurrentValue(): number {
-        return this.value;
+class Node_{
+    public Value: number;
+    public Rounded: boolean;
+    constructor() {
+        this.Value = 0;
+        this.Rounded = false;
     }
-    public SetValue(new_value: number): void{
-        this.value = new_value;
-        this.Is_rounded = false;
+
+    public SetValue(val:number){
+        this.Value = val;
+        this.Rounded = false;
     }
-    public RoundValue(RoundType: RoundMethod): void {
-        if(this.Is_rounded) return;
-        switch (RoundType) {
+    public ChangeValue(val:number){
+        this.Value += val;
+        this.Rounded = false;
+    }
+    public Round(method: RoundMethod){
+        if(this.Rounded) return;
+        switch (method) {
             case RoundMethod.DontRound:
                 break;
             case RoundMethod.Tanh:
-                this.value = Math.tanh(this.value);
+                this.Value = Math.tanh(this.Value);
                 break;
             case RoundMethod.ZeroAndOne:
-                if(this.value < 0) this.value = 0;
-                else this.value = 1;
+                this.Value = this.Value > 0 ? 1 : 0;
                 break;
             default:
-                throw new Error("Round method was undefined");
+                throw new Error("Unknown round type");
         }
-        this.Is_rounded = true;
-    }
-    public Reset(): void{
-        this.value = 0;
-        this.Is_rounded = false;
-    }
-    constructor() {
-        this.value = 0;
-        this.Is_rounded = false;
-    }
-    Clone(): NodeNN {
-        var result = new NodeNN();
-        result.Is_rounded = this.Is_rounded;
-        result.value = this.value;
-        return result;
+        this.Rounded = true;
     }
 }
-class LayerNN implements ICloneable{
-    public layer: NodeNN[];
-    protected size: number;
-    public next_layer: LayerNN;
-    public sinnapses: number[][];
-
-    // Getters
-    public Size(): number { return this.size; }
-    
-    constructor(count: number, NextLayer?: LayerNN){
-
-        if(!Number.isInteger(count)){
-            throw new Error("count has to be an integer");
-        }
-
-        this.size = count;
+class LayerNN{
+    public Size: number;
+    public layer: Node_[];
+    public nextLayer: LayerNN;
+    public Sinnapses: number[][];
+    constructor(size: number) {
+        this.Size = size;
         this.layer = [];
-        this.sinnapses = new Array();
+        for (let i = 0; i < size; i++) {
+            this.layer.push(new Node_());
+        }
+    }
 
-        for (let i = 0; i < count; i++) this.layer.unshift(new NodeNN());
-        if(NextLayer) {
-            this.next_layer = NextLayer;
-            for (let i = 0; i < this.Size(); i++) this.sinnapses[i] = new Array();
-            for (let i = 0; i < this.Size(); i++) {
-                for (let j = 0; j < this.next_layer.Size(); j++) {
-                    this.sinnapses[i][j] = (Math.random() * 2) - 1;
-                }
+    // This method uses after creation, in order to attach next layer to this layer
+    public SetNextLayer(next_layer: LayerNN){
+        this.nextLayer = next_layer;
+        this.Sinnapses = [];
+        for (let i = 0; i < this.Size; i++) {
+            this.Sinnapses.push([]);
+            for (let j = 0; j < this.nextLayer.Size; j++) {
+                this.Sinnapses[i].push((Math.random() * 2) - 1);
             }
         }
     }
-    Clone(): LayerNN {
-        var result = new LayerNN(this.size);
-        result.sinnapses = new Array();
-        for (let i = 0; i < this.sinnapses.length; i++) {
-            result.sinnapses.push(new Array());
-            for (let j = 0; j < this.sinnapses[i].length; j++) {
-                result.sinnapses[i].push(this.sinnapses[i][j]);
-            }
-        }
 
-        return result;
+    public Round(method: RoundMethod){
+        this.layer.forEach((node) => {node.Round(method);});
     }
-    public Reset() :void{
-        this.layer.forEach(element => {
-            element.Reset();
-        });
+    
+    public Reset(){
+        this.layer.forEach((node) => {node.SetValue(0);});
     }
-    public RoundValues(RoundType: RoundMethod) :void{
-        this.layer.forEach(element => {
-            element.RoundValue(RoundType);
-        });
-    }
-    public CalcNextLayer(RoundType: RoundMethod): void{
-        this.RoundValues(RoundType);
-        this.next_layer.Reset();
 
-        for (let i = 0; i < this.Size(); i++) {
-            for (let j = 0; j < this.next_layer.Size(); j++) {
-                var cur_node_next_layer = this.next_layer.layer[j];
-                var cur_node = this.layer[i];
-                cur_node_next_layer.SetValue(cur_node_next_layer.CurrentValue() + (cur_node.CurrentValue() * this.sinnapses[i][j]));
+    public CalcNextLayer(round_method: RoundMethod){
+        if(!this.nextLayer) throw new Error("Next layer is not defined!");
+        this.Round(round_method);
+        this.nextLayer.Reset();
+        for (let i = 0; i < this.Size; i++) {
+            for (let j = 0; j < this.nextLayer.Size; j++) {
+                this.nextLayer.layer[j].ChangeValue(this.layer[i].Value * this.Sinnapses[i][j]);
             }
         }
     }
-    public OffsetSinnapses(factor: number): void{
-        this.sinnapses.forEach((row) => {
-            row.map((num) => {num += ((Math.random() * 2) - 1) * factor;});
-        });
+    public CopySinnapses(sinnapses_ : number[][]){
+        if(sinnapses_.length != this.Sinnapses.length) throw new Error("Size of matrixes are not equal");
+        if(sinnapses_[0].length != this.Sinnapses[0].length) throw new Error("Size of matrixes are not equal");
+        for (let i = 0; i < this.Size; i++) {
+            for (let j = 0; j < this.nextLayer.Size; j++) {
+                this.Sinnapses[i][j] = sinnapses_[i][j];
+            }
+        }
+    }
+
+    public OffsetSinnapses(offset:number){
+        for (let i = 0; i < this.Size; i++) {
+            for (let j = 0; j < this.nextLayer.Size; j++) {
+                this.Sinnapses[i][j] = this.Sinnapses[i][j] + (((Math.random() * 2) - 1) * offset);
+            }
+        }
     }
 }
-class NeuralNet implements ICloneable {
-    public readonly InputsCount: number;
-    public readonly OutputsCount: number;
-    public readonly NeuralsInLayerCount: number;
-    public readonly HiddenLayersCount: number;
+class NeuralNet{
+    public Inputs: LayerNN;
+    public Hidden: LayerNN[];
+    public Outputs: LayerNN;
+
+    public InputsCount:number;
+    public OutputsCount:number;
+    public LayersCount:number;
+    public NeuralsCount:number;
+
     public InputsRound: RoundMethod;
     public OutputsRound: RoundMethod;
     public NeuralsRound: RoundMethod;
 
-    protected score: number;
-    
-    protected Inputs: LayerNN;
-    protected Outputs: LayerNN;
-    protected HiddenLayer: LayerNN[];
+    constructor(inputsCount: number, outputsCount: number, layersCount: number, neuralsCount: number,
+        inputsRound: RoundMethod, outputsRound: RoundMethod, neuralsRound: RoundMethod) {
+        this.InputsCount = inputsCount;
+        this.OutputsCount = outputsCount;
+        this.LayersCount = layersCount;
+        this.NeuralsCount = neuralsCount;
 
-    protected CheckIntegers(): void {
-      if (
-        Number.isInteger(this.InputsCount) &&
-        Number.isInteger(this.HiddenLayersCount) &&
-        Number.isInteger(this.NeuralsInLayerCount) &&
-        Number.isInteger(this.OutputsCount)
-      ) {
-        return;
-      }
-      throw new Error("Invalid property values. All properties must be integers.");
-    }
-    public Score(): number{
-        return this.score;
-    }
-  
-    constructor(
-      inputsCount: number,
-      outputsCount: number,
-      neuralsInLayerCount: number,
-      hiddenLayersCount: number,
-      inputsRound: RoundMethod,
-      neuralsRound: RoundMethod,
-      outputsRound: RoundMethod
-    ) {
-      this.InputsCount = inputsCount;
-      this.OutputsCount = outputsCount;
-      this.NeuralsInLayerCount = neuralsInLayerCount;
-      this.HiddenLayersCount = hiddenLayersCount;
-      this.InputsRound = inputsRound;
-      this.NeuralsRound = neuralsRound;
-      this.OutputsRound = outputsRound;
-      this.score = 0;
-      this.HiddenLayer = new Array();
-      this.Outputs = new LayerNN(this.OutputsCount);
-      for (let i = 0; i < this.HiddenLayersCount; i++) {
-        if(i == 0) this.HiddenLayer[i] = new LayerNN(this.NeuralsInLayerCount, this.Outputs);
-        else this.HiddenLayer[i] = new LayerNN(this.NeuralsInLayerCount, this.HiddenLayer[i - 1]);
-      }
-      this.Inputs = new LayerNN(this.InputsCount, this.HiddenLayer[this.HiddenLayersCount - 1]);
-      // Check if all properties are integers
-      this.CheckIntegers();
-    }
-    Clone(): NeuralNet {
-        var result = new NeuralNet(this.InputsCount, this.OutputsCount, this.NeuralsInLayerCount, this.HiddenLayersCount, this.InputsRound, this.NeuralsRound, this.OutputsRound);
-        result.Outputs = this.Outputs.Clone();
-        for (let i = this.HiddenLayer.length - 1; i > 0; i--) {
-            result.HiddenLayer[i] = this.HiddenLayer[i].Clone();
-            if(i == this.HiddenLayer.length - 1) result.HiddenLayer[i].next_layer = result.Outputs;
-            else result.HiddenLayer[i].next_layer = result.HiddenLayer[i - 1].next_layer;
-            result.Inputs.next_layer = result.HiddenLayer[0];
+        this.InputsRound = inputsRound;
+        this.OutputsRound = outputsRound;
+        this.NeuralsRound = neuralsRound;
+
+        // Layers creation
+        this.Inputs = new LayerNN(this.InputsCount);
+        this.Hidden = [];
+        for (let i = 0; i < layersCount; i++) {
+            this.Hidden.push(new LayerNN(neuralsCount));
         }
-        result.Inputs = this.Inputs.Clone();
-        result.score = 0;
-        return result;
-    }
-    public GetInputs(numbers: number[]): void{
-        if(numbers.length != this.InputsCount) throw new Error("numbers count does not appropriate to count of inputs in your NN");
+        this.Outputs = new LayerNN(this.OutputsCount);
 
+        // Attaching layers
+        this.Inputs.SetNextLayer(this.Hidden[0]);
+        for (let i = 0; i < layersCount; i++) {
+            if(i == layersCount - 1) this.Hidden[i].SetNextLayer(this.Outputs);
+            else this.Hidden[i].SetNextLayer(this.Hidden[i + 1]);
+        }
+    }
+
+    public GetInputs(numbers: number[]): void{
+        if(numbers.length != this.InputsCount) throw new Error("Numbers count is not equal to inputs count in this neural net!");
         for (let i = 0; i < this.Inputs.layer.length; i++) {
             this.Inputs.layer[i].SetValue(numbers[i]);
         }
+        this.Inputs.Round(this.InputsRound);
     }
-    public ChangeScore(change: number): void{
-        this.score += change;
-    }
-    public OffsetSinnapses(factor:number):void{
-        this.Inputs.OffsetSinnapses(factor);
-        this.HiddenLayer.forEach((l) => l.OffsetSinnapses(factor));
-    }
-    public Calc(): void{
-        this.Inputs.CalcNextLayer(this.InputsRound);
-        for (let i = this.HiddenLayer.length - 1; i >= 0; i--) {
-            this.HiddenLayer[i].CalcNextLayer(this.NeuralsRound);
-        }
-        this.Outputs.RoundValues(this.OutputsRound);
 
+    protected Calc(){
+        this.Inputs.CalcNextLayer(this.InputsRound);
+        for (let i = 0; i < this.LayersCount; i++) {
+            this.Hidden[i].CalcNextLayer(this.NeuralsRound);
+        }
+        this.Outputs.Round(this.OutputsRound);
     }
-    public Result(): number[]{
+
+    public GetResult() : number[]{
         this.Calc();
-        var result: number[] = new Array();
-        this.Outputs.layer.forEach(element => {
-            result.push(element.CurrentValue());
-        });
+        var result: number[] = [];
+        for (let i = 0; i < this.Outputs.layer.length; i++) {
+            result.push(this.Outputs.layer[i].Value);
+        }
         return result;
     }
-  }
-  class Generation{
-    public Generation_: NeuralNet[];
-    public InputsCount: number;
-    public OutputsCount: number;
-    public NeuralsInLayerCount: number;
-    public HiddenLayersCount: number;
-    public InputsRound: RoundMethod;
-    public NeuralsRound: RoundMethod;
-    public OutputsRound: RoundMethod;
-    protected Size: number;
-    public SensivityLearning: number;
-    
-    constructor(
-        inputsCount: number,
-        outputsCount: number,
-        neuralsInLayerCount: number,
-        hiddenLayersCount: number,
-        size: number,
-        inputsRound: RoundMethod,
-        neuralsRound: RoundMethod,
-        outputsRound: RoundMethod
-    ) {
-        console.log("Creating generation...");
-        this.InputsCount = inputsCount;
-        this.OutputsCount = outputsCount;
-        this.NeuralsInLayerCount = neuralsInLayerCount;
-        this.HiddenLayersCount = hiddenLayersCount;
-        this.InputsRound = inputsRound;
-        this.NeuralsRound = neuralsRound;
-        this.OutputsRound = outputsRound;
-        this.Size = size;
-        this.SensivityLearning = 0.001;
-        this.Generation_ = new Array();
-        for (let i = 0; i < this.Size; i++) {
-            this.Generation_.push(new NeuralNet(
-                this.InputsCount,
-                this.OutputsCount,
-                this.NeuralsInLayerCount,
-                this.HiddenLayersCount,
-                this.InputsRound,
-                this.NeuralsRound,
-                this.OutputsRound
-            ));
+
+    public CopySinnapses(example:NeuralNet){
+        if(example.InputsCount != this.InputsCount) throw new Error("Neural nets are not appropriate!");
+        if(example.NeuralsCount != this.NeuralsCount) throw new Error("Neural nets are not appropriate!");
+        if(example.LayersCount != this.LayersCount) throw new Error("Neural nets are not appropriate!");
+        if(example.OutputsCount != this.OutputsCount) throw new Error("Neural nets are not appropriate!");
+
+        this.Inputs.CopySinnapses(example.Inputs.Sinnapses);
+        for (let i = 0; i < this.Hidden.length; i++) {
+            this.Hidden[i].CopySinnapses(example.Hidden[i].Sinnapses);
         }
-        console.log("Generation is created!");
     }
 
-    public get size() : number {
-        return this.Size;
-    }
-    
-    public BestNet() : NeuralNet{
-        return this.Generation_.reduce((max, obj) => (obj.Score() > (max?.Score() || 0) ? obj : max));
-    }
-    public BestNetIndex() : number{
-        return this.Generation_.indexOf(this.BestNet());
-    }
-    public BestScore(): number{
-        if(this.BestNet()) return this.BestNet().Score();
-        else return 0;
-    }
-    public SetByBestNet(): void{
-        var BestNet_: NeuralNet = this.BestNet();
-        for (let i = 0; i < this.Generation_.length; i++) {
-            this.Generation_[i] = BestNet_.Clone();
-            if(i != 0) this.Generation_[i].OffsetSinnapses(this.SensivityLearning);
-            this.Generation_[i].ChangeScore(-this.Generation_[i].Score());
+    public OffsetSinnapses(offset:number){
+        this.Inputs.OffsetSinnapses(offset);
+        for (let i = 0; i < this.Hidden.length; i++) {
+            this.Hidden[i].OffsetSinnapses(offset);
         }
-        console.log("Next generation is ready");
     }
+}
+class Generation{
 
-    public PrintGenerationInfo(): void {
-        console.log("Generation Info:");
-        console.log(`Inputs Count: ${this.InputsCount}`);
-        console.log(`Outputs Count: ${this.OutputsCount}`);
-        console.log(`Neurals In Layer Count: ${this.NeuralsInLayerCount}`);
-        console.log(`Hidden Layers Count: ${this.HiddenLayersCount}`);
-        console.log(`Inputs Round: ${this.InputsRound}`);
-        console.log(`Neurals Round: ${this.NeuralsRound}`);
-        console.log(`Outputs Round: ${this.OutputsRound}`);
-        console.log(`Generation Size: ${this.size}`);
-        console.log(`Sensitivity Learning: ${this.SensivityLearning}`);
-        console.log(`Best Score: ${this.BestScore()}`);
-        console.log(`Best Net Index: ${this.BestNetIndex()}`);
-    }
-
-    public ResetScores(){
-        this.Generation_.forEach((nn) => {nn.ChangeScore(nn.Score());});
-    }
-  }
-  class LearningDB{
-    public LearningInputs: Array<Array<number>>;
-    public ExpectedOutputs: Array<Array<number>>;
+    // Neural nets parameters
     public InputsCount:number;
     public OutputsCount:number;
-    constructor(inputsCount:number, outputsCount:number){
-        this.LearningInputs = [];
-        this.ExpectedOutputs = [];
+    public LayersCount:number;
+    public NeuralsCount:number;
+
+    public InputsRound: RoundMethod;
+    public OutputsRound: RoundMethod;
+    public NeuralsRound: RoundMethod;
+
+    // Population parameters
+    public Size:number;
+    public LearningFactor:number;
+    public DB:LearningDB;
+    public CurrentError:number;
+    public GenerationsPassed:number;
+
+    public Generation_: NeuralNet[];
+
+    constructor(inputsCount: number, outputsCount: number, layersCount: number, neuralsCount: number,
+        inputsRound: RoundMethod, outputsRound: RoundMethod, neuralsRound: RoundMethod,
+        size: number, learningFactor: number, db: LearningDB) {
+        this.InputsCount = inputsCount;
+        this.OutputsCount = outputsCount;
+        this.LayersCount = layersCount;
+        this.NeuralsCount = neuralsCount;
+
+        this.InputsRound = inputsRound;
+        this.OutputsRound = outputsRound;
+        this.NeuralsRound = neuralsRound;
+
+        this.Size = size;
+        this.LearningFactor = learningFactor;
+        this.DB = db;
+        this.CurrentError = 0;
+        this.GenerationsPassed = 0;
+
+        this.Generation_ = [];
+        for (let i = 0; i < size; i++) {
+            this.Generation_.push(new NeuralNet(this.InputsCount, this.OutputsCount, this.LayersCount, this.NeuralsCount, this.InputsRound, this.OutputsRound, this.NeuralsRound));
+        }
+    }
+
+    // Index of best neural net
+    public FindBest():number{
+        if(this.DB.Size() == 0) throw new Error("Database is empty");
+        var scores:number[] = [];
+        for (let i = 0; i < this.Generation_.length; i++) {
+            let error = 0;
+            for (let j = 0; j < this.DB.Size(); j++) {
+                this.Generation_[i].GetInputs(this.DB.LearnInputs[j]);
+                var res = this.Generation_[i].GetResult();
+                for (let k = 0; k < res.length; k++) {
+                    error += Math.pow(res[k] - this.DB.LearnOutputs[j][k], 2);
+                }
+            }
+            scores.push(error);
+        }
+        this.CurrentError = Math.min(...scores);
+        return scores.indexOf(Math.min(...scores));
+    }
+
+    public PassOneGeneration(){
+        if(this.DB.Size() == 0){
+            alert("Learn DB is empty");
+            return;
+        }
+        var best_index = this.FindBest();
+        for (let i = 0; i < this.Generation_.length; i++) {
+            if(best_index == i) continue;
+            this.Generation_[i].CopySinnapses(this.Generation_[best_index]);
+            this.Generation_[i].OffsetSinnapses(this.LearningFactor);
+        }
+        this.GenerationsPassed++;
+        console.log("Generation passed! Current error of neural net: " + this.CurrentError);
+    }
+}
+class LearningDB{
+    // Learn data for neural net population
+    public LearnInputs:number[][];
+    public LearnOutputs:number[][];
+
+    public InputsCount:number;
+    public OutputsCount:number;
+
+    constructor(inputsCount: number, outputsCount: number) {
+        this.LearnInputs = [];
+        this.LearnOutputs = [];
+
         this.InputsCount = inputsCount;
         this.OutputsCount = outputsCount;
     }
 
-    public AddPair(inputs:[], outputs: []){
-        if(inputs.length != this.InputsCount || outputs.length != this.OutputsCount) throw new Error("Inputs or outputs length is not appropriate for this DB");
-        this.LearningInputs.push(inputs);
-        this.ExpectedOutputs.push(outputs);
+    public AddPair(inputs: number[], outputs: number[]){
+        if(inputs.length != this.InputsCount || outputs.length != this.OutputsCount) throw new Error("Inputs or outputs are not appropriate for this DB!");
+        this.LearnInputs.push(inputs);
+        this.LearnOutputs.push(outputs);
     }
-  }
-function PassOneGeneration(population: Generation, learningDB: LearningDB) {
-    population.ResetScores();
-    population.Generation_.forEach(net => {
-        var error = 0;
-        var res = net.Result();
-        learningDB.LearningInputs.forEach((inputs, index) => {
-            net.GetInputs(inputs);
-            res.forEach((output, index_) => {
-                error += Math.pow(output - learningDB.ExpectedOutputs[index][index_], 2);
-            });
-        });
-        net.ChangeScore(100000 - error);
-    });
+
+    public Size():number {
+        return this.LearnInputs.length;
+    }
 }
