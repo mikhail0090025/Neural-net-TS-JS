@@ -20,23 +20,23 @@
 </head>
 <body>
     <div class="container-fluid row">
-        <div class="col-md-5 border rounded border-dark p-4 m-2 bg-info" id="new_generation">
+        <div class="col-sm-12 col-md-5 col-lg-5 col-xl-3 border rounded border-dark p-4 m-2 bg-info" id="new_generation">
             <h3>New generation</h3>
             <div class="form-group">
                 <label for="inputs_count">Inputs count: </label>
-                <input type="number" name="inputs_count" id="inputs_count" min="1" max="9999" value="3">
+                <input type="number" name="inputs_count" id="inputs_count" min="1" max="9999" value="2">
             </div>
             <div class="form-group">
                 <label for="neurals_count">Neurals count: </label>
-                <input type="number" name="neurals_count" id="neurals_count" min="1" max="9999" value="3">
-            </div>
-            <div class="form-group">
-                <label for="outputs_count">Outputs count: </label>
-                <input type="number" name="outputs_count" id="outputs_count" min="1" max="9999" value="3">
+                <input type="number" name="neurals_count" id="neurals_count" min="1" max="9999" value="20">
             </div>
             <div class="form-group">
                 <label for="layers_count">Layers count: </label>
-                <input type="number" name="layers_count" id="layers_count" min="1" max="9999" value="3">
+                <input type="number" name="layers_count" id="layers_count" min="1" max="9999" value="10">
+            </div>
+            <div class="form-group">
+                <label for="outputs_count">Outputs count: </label>
+                <input type="number" name="outputs_count" id="outputs_count" min="1" max="9999" value="2">
             </div>
             <div class="form-group">
                 <label for="size_">Generation size: </label>
@@ -44,19 +44,20 @@
             </div>
             <button class="btn btn-primary" id="btn_new_generation">Create</button>
         </div>
-        <div class="col-md-5 border rounded border-dark p-4 m-2 bg-info" id="LearnDBblock">
+        <div class="col-sm-12 col-md-5 col-lg-5 col-xl-3 border rounded border-dark p-4 m-2 bg-info" id="LearnDBblock">
             <button class="btn btn-primary mt-3 mb-3" id="add_item_to_db">Add item to learn database</button>
             <button class="btn btn-primary mt-3 mb-3" id="show_db">Show Learn DB</button>
             <div id="learn_db_show"></div>
         </div>
-        <div class="col-md-5 border rounded border-dark p-4 m-2 bg-info" id="new_item_in_learn_DB">
+        <div class="col-sm-12 col-md-5 col-lg-5 col-xl-3 border rounded border-dark p-4 m-2 bg-info" id="new_item_in_learn_DB">
             
         </div>
-        <div class="col-md-5 border rounded border-dark p-4 m-2 bg-info" id="population_block">
+        <div class="col-sm-12 col-md-5 col-lg-5 col-xl-3 border rounded border-dark p-4 m-2 bg-info" id="population_block">
             <h4>Population data:</h4>
             <span v-if="GenerationsPassed !== 0">Error: {{ CurrentError }}</span><br>
             <span>Frames passed: {{ GenerationsPassed }}</span><br>
-            <span>Learning factor: {{ LearningFactor.toFixed(7) }}</span>
+            <span>Learning factor: {{ LearningFactor.toFixed(7) }}</span><br>
+            <span>Learn DB size: {{ LearnDBsize }}</span>
             <button @click="changeLearningFactor(10)" class="btn btn-primary mt-3 mb-3" v-show="GenerationCreated_">x10</button>
             <button @click="changeLearningFactor(0.1)" class="btn btn-primary mt-3 mb-3" v-show="GenerationCreated_">x0.1</button>
 
@@ -65,9 +66,14 @@
             <button class="btn btn-primary mt-3 mb-3" @click="update">&#x21BB;</button>
             <button class="btn btn-success mt-3 mb-3" id="learn_untill_btn">Start learning</button>
         </div>
+        <div class="col-sm-12 col-md-5 col-lg-5 col-xl-3 border rounded border-dark p-4 m-2 bg-info">
+            <button class="btn btn-primary mt-3 mb-3" id="test_nn_button">Test neural net</button>
+            <div id="test_nn_block"></div>
+        </div>
     </div>
     
     <!-- POPULATION AND LEARNING DB ARE HERE -->
+    <script src="learn_sets.js"></script>
     <script src="page.js"></script>
 
     <!-- Population block -->
@@ -78,6 +84,7 @@
                 GenerationsPassed: generation ? generation.GenerationsPassed : 0,
                 CurrentError: generation ? generation.CurrentError : 0,
                 LearningFactor: generation ? generation.LearningFactor : 0,
+                LearnDBsize: generation ? generation.DB.Size() : 0,
                 GenerationCreated_: GenerationCreated
             },
             methods:{
@@ -85,6 +92,7 @@
                     this.GenerationCreated_ = GenerationCreated;
                     this.GenerationsPassed = GenerationCreated ? generation.GenerationsPassed : 0;
                     this.LearningFactor = GenerationCreated ? generation.LearningFactor : 0;
+                    this.LearnDBsize = GenerationCreated ? generation.DB.Size() : 0;
                     this.CurrentError = GenerationCreated ? generation.CurrentError : 0;
                 },
                 changeLearningFactor(factor){
@@ -188,6 +196,63 @@
         }
     </script>
 
+    <!-- TEST NEURAL NET -->
+    <script type="text/babel">
+        function TestNNBlock({}){
+            
+            const getInputs = [];
+
+            for (let i = 0; i < generation.InputsCount; i++) {
+                getInputs.push(<div className="form-group">
+                    <label for={"get_input" + i}>Input {i + 1}:</label>
+                    <input type="number" id={"get_input" + i} defaultValue={0} step={0.05}/>
+                </div>);
+            }
+
+            const TestNN = () => {
+                var inputs = [];
+                for (let i = 0; i < generation.InputsCount; i++) {
+                    inputs.push(parseFloat($("#get_input" + i).val()));
+                }
+                generation.Generation_[0].GetInputs(inputs);
+                var result = generation.Generation_[0].GetResult();
+                console.log(inputs);
+                console.log(result);
+                return (
+                    <table>
+                        <tbody>
+                            <tr>
+                                {result.map((num, index) => {
+                                        console.log(num);
+                                        return <td key={index}>{parseFloat(num).toFixed(3)}</td>
+                                    }
+                                )}
+                            </tr>
+                        </tbody>
+                    </table>
+                );
+            };
+
+            return(
+                <div>
+                    {getInputs}
+                    <br />
+                    <button className="btn btn-primary mt-3 mb-3" onClick={() => {
+                        ReactDOM.render(TestNN(), document.getElementById("neural_net_result"));
+                        // document.getElementById("neural_net_result").innerHTML = TestNN();
+                    }}>Test!</button>
+                    <div id="neural_net_result"></div>
+                </div>
+            );
+        }
+
+        //////////////////////////////////////////////////
+
+        function ShowTestNNTag() {
+            ReactDOM.render(<TestNNBlock />, document.getElementById("test_nn_block"));
+        }
+    </script>
+
     <!-- BUTTONS -->
     <script>
         $(".btn-primary").attr("class", "btn btn-primary m-2");
@@ -204,6 +269,11 @@
             $(this).text(is_learning ? "Stop learning" : "Start learning");
             if(is_learning){
                 learning_cycle = setInterval(() => {
+                    if(generation.DB.Size() == 0){
+                        alert("Learn DB is empty");
+                        clearInterval(learning_cycle);
+                        return;
+                    }
                     generation.PassOneGeneration();
                     PopulationVue.update();
                 }, 0);
@@ -231,6 +301,15 @@
         });
         $("body").on("click", "#pass_one_gen", function() {
             generation.PassOneGeneration();
+        });
+        $("body").on("click", "#test_nn_button", function () {
+            if(!GenerationCreated){
+                $("#test_nn_block").text("Generation was not created!");
+                return;
+            }
+            else{
+                ShowTestNNTag();
+            }
         });
     </script>
 </body>
