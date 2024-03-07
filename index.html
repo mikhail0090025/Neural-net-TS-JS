@@ -19,8 +19,8 @@
     </style>
 </head>
 <body>
-    <div class="container-fluid">
-        <div class="col-md-6 border rounded border-primary p-4" id="new_generation">
+    <div class="container-fluid row">
+        <div class="col-md-5 border rounded border-dark p-4 m-2 bg-info" id="new_generation">
             <h3>New generation</h3>
             <div class="form-group">
                 <label for="inputs_count">Inputs count: </label>
@@ -44,13 +44,15 @@
             </div>
             <button class="btn btn-primary" id="btn_new_generation">Create</button>
         </div>
-        <button class="btn btn-primary mt-3 mb-3" id="add_item_to_db">Add item to learn database</button>
-        <button class="btn btn-primary mt-3 mb-3" id="show_db">Show Learn DB</button>
-        <div id="learn_db_show"></div>
-        <div class="col-md-6 border rounded border-primary p-4" id="new_item_in_learn_DB">
+        <div class="col-md-5 border rounded border-dark p-4 m-2 bg-info" id="LearnDBblock">
+            <button class="btn btn-primary mt-3 mb-3" id="add_item_to_db">Add item to learn database</button>
+            <button class="btn btn-primary mt-3 mb-3" id="show_db">Show Learn DB</button>
+            <div id="learn_db_show"></div>
+        </div>
+        <div class="col-md-5 border rounded border-dark p-4 m-2 bg-info" id="new_item_in_learn_DB">
             
         </div>
-        <div class="col-md-6 border rounded border-primary p-4" id="population_block">
+        <div class="col-md-5 border rounded border-dark p-4 m-2 bg-info" id="population_block">
             <h4>Population data:</h4>
             <span v-if="GenerationsPassed !== 0">Error: {{ CurrentError }}</span><br>
             <span>Frames passed: {{ GenerationsPassed }}</span><br>
@@ -61,6 +63,7 @@
             <br>
             <button class="btn btn-primary mt-3 mb-3" id="pass_one_gen" @click="update">Pass one generation</button>
             <button class="btn btn-primary mt-3 mb-3" @click="update">&#x21BB;</button>
+            <button class="btn btn-success mt-3 mb-3" id="learn_untill_btn">Start learning</button>
         </div>
     </div>
     
@@ -99,6 +102,8 @@
 
     <!-- LEARN DATABASE -->
     <script type="text/babel">
+        //import React, { useState } from 'react';
+
         // REACT COMPONENTS
         function AddDataToDb({database}){
             let inputElements = [];
@@ -121,18 +126,30 @@
             );
         }
         function ShowLearnDB({database}){
+
+            const [shown, setShown] = useState(true);
+
+            const hideDB = () => {
+                setShown(false);
+            };
+
             return(
-                <table>
-                    <tbody>
-                        {database.LearnInputs.map((inputs, index) => (
-                            <div key={index}>
-                                <NumbersToTabel list={inputs}/>
-                                <NumbersToTabel list={database.LearnOutputs[index]}/>
-                                <br />
-                            </div>
-                        ))}
-                    </tbody>
-                </table>
+                <div>
+                    {shown && (
+                        <table>
+                            <tbody>
+                                {database.LearnInputs.map((inputs, index) => (
+                                    <div key={index}>
+                                        <NumbersToTabel list={inputs}/>
+                                        <NumbersToTabel list={database.LearnOutputs[index]}/>
+                                        <br />
+                                    </div>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+                    <button className="btn btn-primary" onClick={hideDB}>Hide DB</button>
+                </div>
             );
         }
         function NumbersToTabel({list}){
@@ -173,9 +190,30 @@
 
     <!-- BUTTONS -->
     <script>
-        $(".btn").attr("class", "btn btn-primary m-2");
-        $("body").on("mouseenter", ".btn", function() { $(this).attr("class", "btn btn-secondary m-2"); } );
-        $("body").on("mouseleave", ".btn", function() { $(this).attr("class", "btn btn-primary m-2"); } );
+        $(".btn-primary").attr("class", "btn btn-primary m-2");
+        $("body").on("mouseenter", ".btn-primary", function() { $(this).attr("class", "btn btn-secondary m-2"); } );
+        $("body").on("mouseleave", ".btn-secondary", function() { $(this).attr("class", "btn btn-primary m-2"); } );
+
+        // START LEARNING BUTTON
+
+        var is_learning = false;
+        let learning_cycle;
+        $("body").on("click", "#learn_untill_btn", function() {
+            is_learning = !is_learning;
+            $(this).attr("class", is_learning? "btn btn-danger m-2" : "btn btn-success m-2");
+            $(this).text(is_learning ? "Stop learning" : "Start learning");
+            if(is_learning){
+                learning_cycle = setInterval(() => {
+                    generation.PassOneGeneration();
+                    PopulationVue.update();
+                }, 0);
+            }
+            else {
+                clearInterval(learning_cycle);
+            }
+        } );
+
+        // OTHER BUTTONS
         $("body").on("click", "#add_item_to_db", function() {
             if(learning_db) SetNewItemWindow();
             else {
