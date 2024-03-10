@@ -206,6 +206,7 @@
                 getInputs.push(<div className="form-group">
                     <label for={"get_input" + i}>Input {i + 1}:</label>
                     <input type="number" id={"get_input" + i} defaultValue={0} step={0.05}/>
+                    <button className="btn btn-primary m-2" onClick={() => $('#get_input'+i).val($('#get_input'+i).val() > 0 ? 0 : 1)}>On/Off</button>
                 </div>);
             }
 
